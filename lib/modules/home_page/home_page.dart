@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:task_maneger/models/task.dart';
+import 'package:task_maneger/repositories/task_repository.dart';
 import 'package:task_maneger/ui/snack_bar/snack_bars.dart';
 import 'package:task_maneger/ui/todo_list_item/todo_list_item.dart';
 
@@ -11,22 +12,67 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  void pressButton() {}
-
   final TextEditingController taskController = TextEditingController();
+  final TaskRepository taskRepository = TaskRepository();
+
+  @override
+  void initState() {
+    super.initState();
+    taskRepository.getTaskList().then(
+          (value) => {
+            setState(
+              () {
+                tasks = value;
+              },
+            ),
+          },
+        );
+  }
 
   List<Task> tasks = [];
+  List<Task> deletedAllTasks = [];
+  Task? deletedTask;
+  int? deleteTaskPosition;
+  String errText = '';
+
+  void restoreTask(Task task, int taskPosition) {
+    tasks.insert(taskPosition, task);
+  }
 
   void onDelete(Task task) {
+    deletedTask = task;
+    deleteTaskPosition = tasks.indexOf(task);
     setState(() {
       tasks.remove(task);
+      taskRepository.saveTask(context, tasks);
     });
-    SnackBars.SnackBarError(context,
-        content: 'Task ${task.title} has been removed');
+    ScaffoldMessenger.of(context).clearSnackBars();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Center(
+          child: Text('Task ${task.title} has been removed'),
+        ),
+        duration: const Duration(milliseconds: 1800),
+        backgroundColor: Colors.red,
+        shape: const BeveledRectangleBorder(),
+        action: SnackBarAction(
+          textColor: Colors.white,
+          label: 'Undo',
+          onPressed: () {
+            setState(() {
+              tasks.insert(deleteTaskPosition!, deletedTask!);
+              taskRepository.saveTask(context, tasks);
+            });
+          },
+        ),
+      ),
+    );
   }
 
   void onCreate() {
-    if (taskController.text.isNotEmpty) {
+    String text = taskController.text;
+    if (text.isNotEmpty) {
       setState(() {
         Task newTask = Task(
           title: taskController.text,
@@ -37,15 +83,54 @@ class _HomePageState extends State<HomePage> {
 
         tasks.add(newTask);
         taskController.clear();
+        taskRepository.saveTask(context, tasks);
       });
+    } else {
+      SnackBars.SnackBarError(context,
+          content: 'You need to enter a name to add a task.');
     }
   }
 
   void deleteAll() {
-    setState(() {
-      tasks = [];
-    });
-    SnackBars.SnackBarSuccess(context, content: 'All tasks have been deleted');
+    if (tasks.isEmpty) {
+      SnackBars.SnackBarError(context,
+          content: 'There are no tasks to be deleted');
+    } else {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Clear all?'),
+          content: const Text('Are you sure you want to delete all tasks?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                setState(() {
+                  deletedAllTasks = tasks;
+                  tasks = [];
+                  taskRepository.saveTask(context, tasks);
+                });
+                SnackBars.SnackBarError(context,
+                    content: 'All your tasks have been deleted');
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.green,
+              ),
+              child: const Text('Yes'),
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.green,
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            )
+          ],
+        ),
+      );
+    }
   }
 
   @override
@@ -70,6 +155,12 @@ class _HomePageState extends State<HomePage> {
                           hintStyle: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w300,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: Color(0xff00d8f3),
+                              width: 2,
+                            ),
                           ),
                         ),
                         controller: taskController,
