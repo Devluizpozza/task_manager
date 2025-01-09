@@ -1,16 +1,8 @@
 # task_maneger
 
-A new Flutter project.
+Task manager, as the name suggests, is a daily task manager, although simple, with good usage practices, you can optimize, improve and remember the routine activities that you need to perform.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+To run the application on your computer, simply clone the code. You will also need an Android emulator. After cloning the code, simply start it on the emulator.
+task_manager is not linked to any database, so no additional configuration is necessary.
